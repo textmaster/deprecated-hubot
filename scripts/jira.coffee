@@ -24,39 +24,45 @@ module.exports = (robot)->
 
         issueIds = _.uniq(issueIds)
         _.each issueIds, (issue)->
+
           robot
-            .http(jiraUrl + "/rest/api/2/issue/#{issue}/transitions")
+            .http(jiraUrl + "/rest/api/2/issue/#{issue}")
             .auth(auth)
             .get() (err, res, body) ->
-              status = JSON.parse(body).transitions.filter (trans)->
-                trans.name.toLowerCase() is 'completed'
+              fields   = JSON.parse(body).fields
+              creator  = fields.creator
+              assignee = fields.assignee
+              status   = fields.status
 
-              robot
-                .http(jiraUrl + "/rest/api/2/issue/#{issue}")
-                .auth(auth)
-                .get() (err, res, body) ->
-                  creator = JSON.parse(body).fields.creator
+              if status.name isnt 'Completed'
+                robot
+                  .http(jiraUrl + "/rest/api/2/issue/#{issue}/transitions")
+                  .auth(auth)
+                  .get() (err, res, body) ->
+                    newStatus = JSON.parse(body).transitions.filter (trans)->
+                      trans.name.toLowerCase() is 'completed'
 
-                  robot
-                    .http(jiraUrl + "/rest/api/2/issue/#{issue}/transitions")
-                    .header("Content-Type", "application/json")
-                    .auth(auth)
-                    .post(JSON.stringify({
-                      transition: status[0]
-                    })) (err, res, body) ->
-                      if res.statusCode == 204
-                        robot.messageRoom 'Main', "Changed successfully the status of #{issue} to #{status[0].name}"
-                      else
-                        robot.messageRoom 'Main', body
+                    robot
+                      .http(jiraUrl + "/rest/api/2/issue/#{issue}/transitions")
+                      .header("Content-Type", "application/json")
+                      .auth(auth)
+                      .post(JSON.stringify({
+                        transition: newStatus[0]
+                      })) (err, res, body) ->
+                        if res.statusCode == 204
+                          robot.messageRoom 'Main', "Changed successfully the status of #{issue} to #{newStatus[0].name}"
+                        else
+                          robot.messageRoom 'Main', body
 
-                  robot
-                    .http(jiraUrl + "/rest/api/2/issue/#{issue}/assignee")
-                    .header("Content-Type", "application/json")
-                    .auth(auth)
-                    .put(JSON.stringify({
-                      name: creator.name
-                    })) (err, res, body) ->
-                      if res.statusCode == 204
-                        robot.messageRoom 'Main', "Changed successfully the assignee of #{issue} to #{creator.displayName}"
-                      else
-                        robot.messageRoom 'Main', body
+              if assignee.name isnt creator.name
+                robot
+                  .http(jiraUrl + "/rest/api/2/issue/#{issue}/assignee")
+                  .header("Content-Type", "application/json")
+                  .auth(auth)
+                  .put(JSON.stringify({
+                    name: creator.name
+                  })) (err, res, body) ->
+                    if res.statusCode == 204
+                      robot.messageRoom 'Main', "Changed successfully the assignee of #{issue} to #{creator.displayName}"
+                    else
+                      robot.messageRoom 'Main', body
