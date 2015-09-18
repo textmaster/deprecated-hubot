@@ -31,12 +31,34 @@ module.exports = (robot)->
               status = JSON.parse(body).transitions.filter (trans)->
                 trans.name.toLowerCase() is 'completed'
 
-              robot.messageRoom 'Main', "Changing the status of #{issue} to #{status[0].name}"
               robot
-                .http(jiraUrl + "/rest/api/2/issue/#{issue}/transitions")
-                .header("Content-Type", "application/json")
+                .http(jiraUrl + "/rest/api/2/issue/#{issue}")
                 .auth(auth)
-                .post(JSON.stringify({
-                  transition: status[0]
-                })) (err, res, body) ->
-                  robot.messageRoom 'Main', if res.statusCode == 204 then "Success!" else body
+                .get() (err, res, body) ->
+                  creator = JSON.parse(body).fields.creator
+
+                  robot.messageRoom 'Main', "Changing the status of #{issue} to #{status[0].name}"
+                  robot
+                    .http(jiraUrl + "/rest/api/2/issue/#{issue}/transitions")
+                    .header("Content-Type", "application/json")
+                    .auth(auth)
+                    .post(JSON.stringify({
+                      transition: status[0]
+                    })) (err, res, body) ->
+                      if res.statusCode == 204
+                        robot.messageRoom 'Main', "Changed successfully the status of #{issue} to #{status[0].name}"
+                      else
+                        robot.messageRoom 'Main', body
+
+                  robot.messageRoom 'Main', "Changing the assignee of #{issue} to #{creator.displayName}"
+                  robot
+                    .http(jiraUrl + "/rest/api/2/issue/#{issue}/assignee")
+                    .header("Content-Type", "application/json")
+                    .auth(auth)
+                    .put(JSON.stringify({
+                      name: creator.name
+                    })) (err, res, body) ->
+                      if res.statusCode == 204
+                        robot.messageRoom 'Main', "Changed successfully the assignee of #{issue} to #{creator.displayName}"
+                      else
+                        robot.messageRoom 'Main', body
