@@ -37,7 +37,6 @@ module.exports = (robot)->
                 .get() (err, res, body) ->
                   creator = JSON.parse(body).fields.creator
 
-                  robot.messageRoom 'Main', "Changing the status of #{issue} to #{status[0].name}"
                   robot
                     .http(jiraUrl + "/rest/api/2/issue/#{issue}/transitions")
                     .header("Content-Type", "application/json")
@@ -50,7 +49,6 @@ module.exports = (robot)->
                       else
                         robot.messageRoom 'Main', body
 
-                  robot.messageRoom 'Main', "Changing the assignee of #{issue} to #{creator.displayName}"
                   robot
                     .http(jiraUrl + "/rest/api/2/issue/#{issue}/assignee")
                     .header("Content-Type", "application/json")
