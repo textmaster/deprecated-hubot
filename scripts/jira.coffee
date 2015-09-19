@@ -34,7 +34,8 @@ module.exports = (robot)->
               assignee = fields.assignee
               status   = fields.status
 
-              if status.name.toLowerCase() isnt 'completed'
+              statusName = status.name.toLowerCase()
+              if statusName isnt 'completed' and statusName isnt 'closed'
                 robot
                   .http(jiraUrl + "/rest/api/2/issue/#{issue}/transitions")
                   .auth(auth)
