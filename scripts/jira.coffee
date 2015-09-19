@@ -10,6 +10,22 @@ module.exports = (robot)->
   jiraUrl   = process.env.HUBOT_JIRA_URL
   auth      = "#{process.env.HUBOT_JIRA_USERNAME}:#{process.env.HUBOT_JIRA_PASSWORD}"
 
+  robot.on 'jira-issue-updated', (data)->
+    comment = data.comment
+    issue   = data.issue.key
+    author  = comment.author
+    regex   = /.*~([^\]]+).*/
+    m       = undefined
+
+    if (m = regex.exec(comment.body)) != null
+      if m.index == regex.lastIndex
+        regex.lastIndex++
+
+      user = m[1]
+      robot.messageRoom 'Main', "@#{user} #{author.name} commented on [#{issue}](https://textmaster.jira.com/browse/#{issue}).\n> #{comment.body}"
+
+
+
   robot.on 'semaphore-deploy', (data)->
     if process.env.HUBOT_JIRA_AUTO_COMPLETE_ON_DEPLOY is '1' and data.server_name is process.env.HUBOT_SEMAPHORE_DEFAULT_SERVER and data.result is 'passed'
 
