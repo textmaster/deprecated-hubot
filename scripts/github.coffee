@@ -48,6 +48,6 @@ module.exports = (robot)->
                         transition: newStatus[0]
                       })) (err, res, body)->
                         if res.statusCode == 204
-                          robot.messageRoom 'Main', "Successfully changed the status of #{issue} from #{status.name} to #{newStatus[0].name}"
+                          robot.messageRoom 'Main', "Successfully changed the status of [#{issue}](https://textmaster.jira.com/browse/#{issue}) from #{status.name} to #{newStatus[0].name}"
                         else
                           robot.messageRoom 'Main', body

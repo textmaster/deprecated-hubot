@@ -51,7 +51,7 @@ module.exports = (robot)->
                         transition: newStatus[0]
                       })) (err, res, body)->
                         if res.statusCode == 204
-                          robot.messageRoom 'Main', "Successfully changed the status of #{issue} to #{newStatus[0].name}"
+                          robot.messageRoom 'Main', "Successfully changed the status of [#{issue}](https://textmaster.jira.com/browse/#{issue}) from #{status.name} to #{newStatus[0].name}"
                         else
                           robot.messageRoom 'Main', body
 
@@ -64,6 +64,6 @@ module.exports = (robot)->
                     name: creator.name
                   })) (err, res, body) ->
                     if res.statusCode == 204
-                      robot.messageRoom 'Main', "Successfully changed the assignee of #{issue} to #{creator.displayName}"
+                      robot.messageRoom 'Main', "Successfully changed the assignee of [#{issue}](https://textmaster.jira.com/browse/#{issue}) to #{creator.displayName}"
                     else
                       robot.messageRoom 'Main', body
