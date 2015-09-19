@@ -11,13 +11,6 @@ module.exports = (robot)->
   _         = require('underscore')
   semaphore = require('semaphore-api')(robot)
 
-  robot.router.post '/hubot/semaphore-events/deploy', (req, res)->
-    data = if req.body.payload? then JSON.parse req.body.payload else req.body
-    robot.emit 'semaphore-deploy', data
-    res.send 'OK'
-
-
-
   robot.respond /build (.*)/, (msg)=>
     branch_name  = msg.match[1]
     project_name = process.env.HUBOT_SEMAPHORE_DEFAULT_PROJECT

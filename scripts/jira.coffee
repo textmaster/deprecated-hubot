@@ -28,17 +28,17 @@ module.exports = (robot)->
           robot
             .http(jiraUrl + "/rest/api/2/issue/#{issue}")
             .auth(auth)
-            .get() (err, res, body) ->
+            .get() (err, res, body)->
               fields   = JSON.parse(body).fields
               creator  = fields.creator
               assignee = fields.assignee
               status   = fields.status
 
-              if status.name isnt 'Completed'
+              if status.name.toLowerCase() isnt 'completed'
                 robot
                   .http(jiraUrl + "/rest/api/2/issue/#{issue}/transitions")
                   .auth(auth)
-                  .get() (err, res, body) ->
+                  .get() (err, res, body)->
                     newStatus = JSON.parse(body).transitions.filter (trans)->
                       trans.name.toLowerCase() is 'completed'
 
@@ -48,9 +48,9 @@ module.exports = (robot)->
                       .auth(auth)
                       .post(JSON.stringify({
                         transition: newStatus[0]
-                      })) (err, res, body) ->
+                      })) (err, res, body)->
                         if res.statusCode == 204
-                          robot.messageRoom 'Main', "Successfully changed successfully the status of #{issue} to #{newStatus[0].name}"
+                          robot.messageRoom 'Main', "Successfully changed the status of #{issue} to #{newStatus[0].name}"
                         else
                           robot.messageRoom 'Main', body
 
