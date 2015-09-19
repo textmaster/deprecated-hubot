@@ -11,18 +11,26 @@ module.exports = (robot)->
   auth      = "#{process.env.HUBOT_JIRA_USERNAME}:#{process.env.HUBOT_JIRA_PASSWORD}"
 
   robot.on 'jira-issue-updated', (data)->
+    userNameMapper =
+      "alexandre": "alex"
+      "sergio": "sergio"
+      "nikolai": "nikolai"
+      "svetlin": "svetlin"
+      "kristi": "kris"
+      "pierre-louis": "pierre-louis"
+      "david": "david"
     comment = data.comment
     issue   = data.issue.key
     author  = comment.author
-    regex   = /.*~([^\]]+).*/
-    m       = undefined
+    regex   = /\[~([^\]]+)\]/g
+    matches = undefined
+    users   = []
 
-    if (m = regex.exec(comment.body)) != null
-      if m.index == regex.lastIndex
-        regex.lastIndex++
+    while (matches = regex.exec(comment.body))
+      users.push("@#{matches[1]}")
 
-      user = m[1]
-      robot.messageRoom 'Main', "@#{user} #{author.name} commented on [#{issue}](https://textmaster.jira.com/browse/#{issue}).\n> #{comment.body}"
+    if users.length > 0
+      robot.messageRoom 'Main', "#{users.join(' ')}, #{author.displayName} commented on [#{issue}](https://textmaster.jira.com/browse/#{issue}).\n> #{comment.body}"
 
 
 
