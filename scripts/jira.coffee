@@ -27,7 +27,9 @@ module.exports = (robot)->
     users   = []
 
     while (matches = regex.exec(comment.body))
-      users.push("@#{matches[1]}")
+      mappedUser = userNameMapper[matches[1]]
+      if mappedUser
+        users.push("@#{mappedUser}")
 
     if users.length > 0
       robot.messageRoom 'Main', "#{users.join(' ')}, #{author.displayName} commented on [#{issue}](https://textmaster.jira.com/browse/#{issue}).\n> #{comment.body}"
