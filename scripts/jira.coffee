@@ -20,19 +20,21 @@ module.exports = (robot)->
       "pierre-louis": "pierre-louis"
       "david": "david"
     comment = data.comment
-    issue   = data.issue.key
-    author  = comment.author
-    regex   = /\[~([^\]]+)\]/g
-    matches = undefined
-    users   = []
 
-    while (matches = regex.exec(comment.body))
-      mappedUser = userNameMapper[matches[1]]
-      if mappedUser
-        users.push("@#{mappedUser}")
+    if comment
+      issue   = data.issue.key
+      author  = comment.author
+      regex   = /\[~([^\]]+)\]/g
+      matches = undefined
+      users   = []
 
-    if users.length > 0
-      robot.messageRoom 'Main', "#{users.join(' ')}, #{author.displayName} commented on [#{issue}](https://textmaster.jira.com/browse/#{issue}).\n> #{comment.body}"
+      while (matches = regex.exec(comment.body))
+        mappedUser = userNameMapper[matches[1]]
+        if mappedUser
+          users.push("@#{mappedUser}")
+
+      if users.length > 0
+        robot.messageRoom 'Main', "#{users.join(' ')}, #{author.displayName} commented on [#{issue}](https://textmaster.jira.com/browse/#{issue}).\n> #{comment.body}"
 
 
 
