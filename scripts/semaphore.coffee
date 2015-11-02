@@ -11,8 +11,8 @@ module.exports = (robot)->
   _         = require('underscore')
   semaphore = require('semaphore-api')(robot)
 
-  robot.respond /deploy (.*)/, (msg)=>
-    branch_name = msg.match[1]
+  robot.respond /deploy production/, (msg)=>
+    branch_name = 'master'
     project_name = process.env.HUBOT_SEMAPHORE_DEFAULT_PROJECT
     production_regex = new RegExp(".*production.*", "i")
 
