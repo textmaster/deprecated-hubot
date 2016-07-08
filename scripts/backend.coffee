@@ -45,11 +45,9 @@ module.exports = (robot)->
                 msg.reply "Meh? Something went wrong when trying to retreive that file from flowdock. Sorry bro :("
                 return false
         else
-          msg.reply "Meh? Gonna wait a couple more seconds and retry :-/"
+          msg.reply "Meh? Which file dumbass?"
           return false
 
   robot.respond /give me backend stats for this file/, (msg)=>
     msg.reply "Sure, waiting for your file..."
-    interval = setInterval ->
-      clearInterval(interval) if processFileFromFlow(msg)
-    , 2000
+    processFileFromFlow(msg)
