@@ -20,3 +20,8 @@ module.exports = (robot)->
     data = if req.body.payload? then JSON.parse req.body.payload else req.body
     robot.emit 'jira-issue-updated', data
     res.send 'OK'
+
+  robot.router.post '/hubot/backend-events/stats', (req, res)->
+    data = if req.body.payload? then JSON.parse req.body.payload else req.body
+    robot.emit 'backend-events-stats', data
+    res.send 'OK'
