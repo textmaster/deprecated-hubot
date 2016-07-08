@@ -17,7 +17,7 @@ module.exports = (robot)->
 
   processFileFromFlow = (msg)=>
     robot
-      .http("https://#{process.env.HUBOT_FLOWDOCK_API_TOKEN}@api.flowdock.com/flows/textmaster/main/messages?event=file&limit=3")
+      .http("https://#{process.env.HUBOT_FLOWDOCK_API_TOKEN}@api.flowdock.com/flows/textmaster/main/messages?event=file&limit=1")
       .get() (err, res, body)->
         payload = JSON.parse(body)
         file = _.findWhere(payload, event: 'file')
