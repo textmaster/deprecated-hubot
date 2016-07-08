@@ -23,7 +23,6 @@ module.exports = (robot)->
         file = _.findWhere(payload, event: 'file')
 
         if file
-          msg.reply "Got it! Hold on"
           robot
             .http("https://#{process.env.HUBOT_FLOWDOCK_API_TOKEN}@api.flowdock.com/#{file.content.path}")
             .get() (err, res, body)->
@@ -49,5 +48,5 @@ module.exports = (robot)->
           return false
 
   robot.respond /give me backend stats for this file/, (msg)=>
-    msg.reply "Sure, waiting for your file..."
+    msg.reply "Sure. Hold on!"
     processFileFromFlow(msg)
