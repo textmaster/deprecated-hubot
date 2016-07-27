@@ -56,11 +56,13 @@ module.exports = (robot)->
     mapper = [
       { alias: "textmaster", name: process.env.HUBOT_SEMAPHORE_DEFAULT_PROJECT, env: "production", func: deploy_through_semaphore },
       { alias: "textmaster", name: process.env.HUBOT_SEMAPHORE_DEFAULT_PROJECT, env: "staging", func: deploy_through_semaphore },
+      { alias: "textmaster", name: process.env.HUBOT_SEMAPHORE_DEFAULT_PROJECT, env: "sandbox", func: deploy_through_semaphore },
       { alias: "hookshot", name: "Hookshot", env: "production", func: deploy_through_cloud66 },
       { alias: "hookshot", name: "Hookshot", env: "staging", func: deploy_through_cloud66 },
       { alias: "backend", name: "TM Backend", env: "production", func: deploy_through_cloud66 },
       { alias: "backend", name: "TM Backend", env: "staging", func: deploy_through_cloud66 },
       { alias: "wms", name: "WMS Azure", env: "production", func: deploy_through_cloud66 },
+      { alias: "option-presets", name: "OptionPresets", env: "production", func: deploy_through_cloud66 },
     ]
     stack = _.findWhere(mapper, { alias: alias, env: env })
 
