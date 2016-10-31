@@ -15,10 +15,10 @@ module.exports = (robot)->
       "alexandre": "alex"
       "sergio": "sergio"
       "nikolai": "nikolai"
-      "svetlin": "svetlin"
-      "kristi": "kris"
+      "krzysztof": "kris"
       "pierre-louis": "pierre-louis"
-      "david": "david"
+      "gareth": "gareth"
+      "luke": "luke"
     comment = data.comment
 
     if comment
