@@ -63,6 +63,8 @@ module.exports = (robot)->
       { alias: "backend", name: "TM Backend", env: "staging", func: deploy_through_cloud66 },
       { alias: "wms", name: "WMS Azure", env: "production", func: deploy_through_cloud66 },
       { alias: "option-presets", name: "OptionPresets", env: "production", func: deploy_through_cloud66 },
+      { alias: "author-bff", name: "AuthorBFF", env: "staging", func: deploy_through_cloud66 },
+      { alias: "author-bff", name: "AuthorBFF", env: "production", func: deploy_through_cloud66 },
     ]
     stack = _.findWhere(mapper, { alias: alias, env: env })
 
