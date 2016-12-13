@@ -34,7 +34,7 @@ module.exports = (robot)->
                 semaphore.builds(project.hash_id).deploy branch.id, build.build_number, server.id, (response)->
               msg.reply "Deploying #{branch_name} on #{_.pluck(servers, 'name').join()}"
           else
-            msg.reply "Can't deploy. Latest #{branch_name} build did not pass. (#{build.build_url})"
+            msg.reply "Can't deploy. Latest #{branch_name} build did not pass. Status is '#{build.result}' (#{build.build_url})"
 
   deploy_through_cloud66 = (msg, name, env)=>
     robot
