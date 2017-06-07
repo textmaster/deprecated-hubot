@@ -39,7 +39,7 @@ module.exports = (robot)->
               branch_name: branch_name,
               env_regex: env_regex,
             }
-            msg.reply "Couldn't deploy #{branch_name} yet, we'll do as soon as spec passes."
+            msg.reply "Couldn't deploy #{branch_name} yet, will do as soon as spec passes."
 
   deploy_through_cloud66 = (msg, name, env)=>
     robot
