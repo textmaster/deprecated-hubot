@@ -34,7 +34,12 @@ module.exports = (robot)->
                 semaphore.builds(project.hash_id).deploy branch.id, build.build_number, server.id, (response)->
               msg.reply "Deploying #{branch_name} on #{_.pluck(servers, 'name').join()}"
           else
-            msg.reply "Can't deploy. Latest #{branch_name} build did not pass. Status is '#{build.result}' (#{build.build_url})"
+            robot.brain.set "queue-semaphore-deployment-build-#{project.hash_id}-#{build.commit.id}", {
+              branch_id: branch.id,
+              branch_name: branch_name,
+              env_regex: env_regex,
+            }
+            msg.reply "Couldn't deploy #{branch_name} yet, we'll do as soon as spec passes."
 
   deploy_through_cloud66 = (msg, name, env)=>
     robot
@@ -49,6 +54,18 @@ module.exports = (robot)->
           .post({}) (err, res, body)->
             payload = JSON.parse(body)
             msg.reply payload["response"]["message"]
+
+  robot.on 'semaphore-build', (build)->
+    if build.result is "passed"
+      queued = robot.brain.get("queue-semaphore-deployment-build-#{build.project_hash_id}-#{build.commit.id}")
+      if queued
+        semaphore.servers build.project_hash_id, (servers)->
+          servers = _.select servers, (server)->
+            server.name.match(queued.env_regex)
+          _.each servers, (server)->
+            semaphore.builds(build.project_hash_id).deploy queued.branch_id, build.build_number, server.id, (response)->
+          robot.brain.set("queue-semaphore-deployment-build-#{build.project_hash_id}-#{build.commit.id}", null)
+          robot.messageRoom 'Main', "#{queued.branch_name} build passed, now deploying on #{_.pluck(servers, 'name').join()}"
 
   robot.respond /deploy (.*) on (.*)/, (msg)=>
     alias  = msg.match[1]
