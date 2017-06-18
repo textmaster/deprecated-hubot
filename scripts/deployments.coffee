@@ -20,6 +20,9 @@ module.exports = (robot)->
   deploy_through_semaphore = (msg, name, env)=>
     branch_name  = 'master'
     env_regex    = new RegExp(".*#{env}.*", "i")
+    username = msg.envelope.user.name
+    room = msg.envelope.room
+    thread_id = msg.message.metadata.thread_id
 
     semaphore.projects (projects)->
       project = _.findWhere(projects, name: name)
@@ -38,6 +41,9 @@ module.exports = (robot)->
               branch_id: branch.id,
               branch_name: branch_name,
               env_regex: env_regex,
+              username: username,
+              room: room,
+              thread_id: thread_id
             }
             msg.reply "Couldn't deploy #{branch_name} yet, will do as soon as spec passes."
 
@@ -58,6 +64,13 @@ module.exports = (robot)->
   robot.on 'semaphore-build', (build)->
     if build.result is "passed"
       queued = robot.brain.get("queue-semaphore-deployment-build-#{build.project_hash_id}-#{build.commit.id}")
+      envelope = {
+        user: queued.username
+        metadata: {
+          room: queued.room,
+          thread_id: queued.thread_id,
+        }
+      }
       if queued
         semaphore.servers build.project_hash_id, (servers)->
           servers = _.select servers, (server)->
@@ -65,7 +78,7 @@ module.exports = (robot)->
           _.each servers, (server)->
             semaphore.builds(build.project_hash_id).deploy queued.branch_id, build.build_number, server.id, (response)->
           robot.brain.set("queue-semaphore-deployment-build-#{build.project_hash_id}-#{build.commit.id}", null)
-          robot.messageRoom 'Main', "#{queued.branch_name} build passed, now deploying on #{_.pluck(servers, 'name').join()}"
+          robot.send envelope, "#{queued.branch_name} build passed, now deploying on #{_.pluck(servers, 'name').join()}"
 
   robot.respond /deploy (.*) on (.*)/, (msg)=>
     alias  = msg.match[1]
