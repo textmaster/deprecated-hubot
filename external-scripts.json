@@ -10,7 +10,7 @@
   "hubot-rules",
   "hubot-shipit",
   "hubot-youtube",
-  "hubot-datadog",
+  "hubot-datadog-snapshot",
   "semaphore-api",
   "githubot",
   "underscore"
