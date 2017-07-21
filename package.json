@@ -7,6 +7,7 @@
   "dependencies": {
     "githubot": "^1.0.0",
     "hubot": "^2.12.0",
+    "hubot-datadog": "^0.2.4",
     "hubot-diagnostics": "0.0.1",
     "hubot-flowdock": "^0.7.5",
     "hubot-google-images": "^0.1.4",
