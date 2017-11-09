@@ -103,6 +103,7 @@ module.exports = (robot)->
       { alias: "option-presets", name: "option_presets_service", env: "production", func: deploy_through_semaphore },
       { alias: "author-bff", name: "author_bff", env: "staging", func: deploy_through_semaphore },
       { alias: "author-bff", name: "author_bff", env: "production", func: deploy_through_semaphore },
+      { alias: "client-app", name: "client_frontend", env: "production", func: deploy_through_semaphore },
     ]
     stack = _.findWhere(mapper, { alias: alias, env: env })
 
