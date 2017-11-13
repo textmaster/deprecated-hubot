@@ -61,6 +61,9 @@ module.exports = (robot)->
             payload = JSON.parse(body)
             msg.reply payload["response"]["message"]
 
+  robot.on 'semaphore-deploy', (deploy)->
+    console.log deploy
+
   robot.on 'semaphore-build', (build)->
     if build.result is "passed"
       queued = robot.brain.get("queue-semaphore-deployment-build-#{build.project_hash_id}-#{build.commit.id}")
