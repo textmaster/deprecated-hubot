@@ -81,7 +81,7 @@ module.exports = (robot)->
           robot.brain.set("queue-semaphore-deployment-build-#{build.project_hash_id}-#{build.commit.id}", null)
           robot.send envelope, "@#{user.name}: #{queued.branch_name} build passed, now deploying on #{_.pluck(servers, 'name').join()}"
 
-  robot.respond /deploy (.*) on (.*)/, (msg)=>
+  robot.respond /deploy (.*) (?:on|to) (.*)/, (msg)=>
     alias  = msg.match[1]
     env    = msg.match[2]
     mapper = [
