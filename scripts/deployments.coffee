@@ -105,10 +105,11 @@ module.exports = (robot)->
 
       if deploy.result is "passed"
         semaphore.builds(deploy.project_hash_id).info 'master', deploy.build_number, (response)->
-          msg = "Successfuly deployed the following commits to #{deploy.server_name}:\n"
+          msg = "@#{user.name}: Successfuly deployed the following commits to #{deploy.server_name}:\n"
           _.map(response.commits, (commit)->
             msg += "* [#{commit.id.substring(0, 10)}](#{commit.url}) \"#{commit.message}\" from #{commit.author_name}\n"
           )
+          msg += "(cc @Amélie)"
           robot.brain.set("queue-semaphore-deployment-deploy-#{deploy.project_hash_id}-#{deploy.commit.id}", null)
           robot.send envelope, msg
       else
