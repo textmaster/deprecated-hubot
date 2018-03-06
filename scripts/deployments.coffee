@@ -72,7 +72,13 @@ module.exports = (robot)->
   #   }
   # }
   robot.on 'semaphore-deploy', (deploy)->
+    console.log "Deploy hook"
+    console.log deploy
     queued = robot.brain.get("queue-semaphore-deployment-deploy-#{deploy.project_hash_id}-#{deploy.commit.id}")
+
+    console.log "Queued"
+    console.log queued
+
     if queued
       user = queued.user
       envelope = {
@@ -85,6 +91,10 @@ module.exports = (robot)->
 
       if deploy.result is "pending"
         semaphore.builds(deploy.project_hash_id).info 'master', deploy.build_number, (response)->
+
+          console.log "Build info"
+          console.log response
+
           msg = "Successfuly deployed the following commits to #{deploy.server_name}:\n"
           _.map(response.commits, (commit)->
             msg += "* [#{commit.id.substring(0, 10)}](#{commit.url}) \"#{commit.message}\" from #{commit.author_name}\n"
