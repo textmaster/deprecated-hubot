@@ -17,6 +17,21 @@ module.exports = (robot)->
   _ = require('underscore')
   semaphore = require('semaphore-api')(robot)
 
+  # Not used yet
+  # deploy_through_cloud66 = (msg, name, env)=>
+  #   robot
+  #     .http("https://app.cloud66.com/api/3/stacks.json")
+  #     .header('Authorization', "Bearer #{process.env.HUBOT_CLOUD66_AUTH_TOKEN}")
+  #     .get() (err, res, body)->
+  #       payload = JSON.parse(body)
+  #       stack = _.findWhere(payload["response"], name: name, environment: env)
+  #       robot
+  #         .http("https://app.cloud66.com/api/3/stacks/#{stack.uid}/deployments.json")
+  #         .header('Authorization', "Bearer #{process.env.HUBOT_CLOUD66_AUTH_TOKEN}")
+  #         .post({}) (err, res, body)->
+  #           payload = JSON.parse(body)
+  #           msg.reply payload["response"]["message"]
+
   deploy_through_semaphore = (msg, name, env)=>
     branch_name  = 'master'
     env_regex    = new RegExp(".*#{env}.*", "i")
@@ -94,7 +109,7 @@ module.exports = (robot)->
         }
       }
 
-      if deploy.result is "pending"
+      if deploy.result is "passed"
         semaphore.builds(deploy.project_hash_id).info 'master', deploy.build_number, (response)->
 
           console.log "Build info"
@@ -107,7 +122,7 @@ module.exports = (robot)->
           robot.brain.set("queue-semaphore-deployment-deploy-#{deploy.project_hash_id}-#{deploy.commit.id}", null)
           robot.send envelope, msg
       else
-        robot.send envelope, "@#{user.name}: Deployment failed #{deploy.html_url}"
+        robot.send envelope, "@#{user.name}: Deployment [#{deploy.number}](#{deploy.html_url}) failed with status #{deploy.result}"
 
   robot.on 'semaphore-build', (build)->
     if build.result is "passed"
