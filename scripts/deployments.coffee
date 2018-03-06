@@ -35,6 +35,11 @@ module.exports = (robot)->
                 server.name.match(env_regex)
               _.each servers, (server)->
                 semaphore.builds(project.hash_id).deploy branch.id, build.build_number, server.id, (response)->
+              robot.brain.set "queue-semaphore-deployment-deploy-#{project.hash_id}-#{build.commit.id}", {
+                user: user,
+                room: room,
+                thread_id: thread_id
+              }
               msg.reply "Deploying #{branch_name} on #{_.pluck(servers, 'name').join()}"
           else
             robot.brain.set "queue-semaphore-deployment-build-#{project.hash_id}-#{build.commit.id}", {
