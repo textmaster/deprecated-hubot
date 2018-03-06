@@ -47,8 +47,52 @@ module.exports = (robot)->
             }
             msg.reply "Couldn't deploy #{branch_name} yet, will do as soon as spec passes."
 
+  # { project_name: 'TextMaster.com',
+  #   project_hash_id: '6550c0d1-a0f7-412e-951a-6524840a451b',
+  #   server_name: '[sandbox] textmaster (Cloud66)',
+  #   number: 992,
+  #   event: 'deploy',
+  #   result: 'passed',
+  #   finished_at: '2018-03-06T09:59:20Z',
+  #   created_at: '2018-03-06T09:40:40Z',
+  #   updated_at: '2018-03-06T09:59:20Z',
+  #   started_at: '2018-03-06T09:40:46Z',
+  #   html_url: 'https://semaphoreci.com/textmaster/textmaster-com/servers/sandbox-textmaster-cloud66/deploys/992',
+  #   branch_name: 'master',
+  #   build_number: 6361,
+  #   build_html_url: 'https://semaphoreci.com/textmaster/textmaster-com/branches/master/builds/6361',
+  #   branch_html_url: 'https://semaphoreci.com/textmaster/textmaster-com/branches/master',
+  #   commit: {
+  #     id: '7465f5795a229678f00f2083b170ba758c881b07',
+  #     url: 'https://github.com/textmaster/TextMaster.com/commit/7465f5795a229678f00f2083b170ba758c881b07',
+  #     author_name: 'Maciek',
+  #     author_email: 'maciejrzasa@gmail.com',
+  #     message: 'Merge pull request #5466 from textmaster/mrzasa/graphical-file-changes\n\nChange Graphic files option behavior',
+  #     timestamp: '2018-03-06T09:26:49Z'
+  #   }
+  # }
   robot.on 'semaphore-deploy', (deploy)->
-    console.log deploy
+    queued = robot.brain.get("queue-semaphore-deployment-deploy-#{deploy.project_hash_id}-#{deploy.commit.id}")
+    if queued
+      user = queued.user
+      envelope = {
+        user: user
+        metadata: {
+          room: queued.room,
+          thread_id: queued.thread_id,
+        }
+      }
+
+      if deploy.result is "pending"
+        semaphore.builds(deploy.project_hash_id).info 'master', deploy.build_number, (response)->
+          msg = "Successfuly deployed the following commits to #{deploy.server_name}:\n"
+          _.map(response.commits, (commit)->
+            msg += "* [#{commit.id.substring(0, 10)}](#{commit.url}) \"#{commit.message}\" from #{commit.author_name}\n"
+          )
+          robot.brain.set("queue-semaphore-deployment-deploy-#{deploy.project_hash_id}-#{deploy.commit.id}", null)
+          robot.send envelope, msg
+      else
+        robot.send envelope, "@#{user.name}: Deployment failed #{deploy.html_url}"
 
   robot.on 'semaphore-build', (build)->
     if build.result is "passed"
@@ -68,6 +112,11 @@ module.exports = (robot)->
           _.each servers, (server)->
             semaphore.builds(build.project_hash_id).deploy queued.branch_id, build.build_number, server.id, (response)->
           robot.brain.set("queue-semaphore-deployment-build-#{build.project_hash_id}-#{build.commit.id}", null)
+          robot.brain.set "queue-semaphore-deployment-deploy-#{build.project_hash_id}-#{build.commit.id}", {
+            user: user,
+            room: room,
+            thread_id: thread_id
+          }
           robot.send envelope, "@#{user.name}: #{queued.branch_name} build passed, now deploying on #{_.pluck(servers, 'name').join()}"
 
   robot.respond /deploy (.*) (?:on|to) (.*)/, (msg)=>
