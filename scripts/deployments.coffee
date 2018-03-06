@@ -47,20 +47,6 @@ module.exports = (robot)->
             }
             msg.reply "Couldn't deploy #{branch_name} yet, will do as soon as spec passes."
 
-  deploy_through_cloud66 = (msg, name, env)=>
-    robot
-      .http("https://app.cloud66.com/api/3/stacks.json")
-      .header('Authorization', "Bearer #{process.env.HUBOT_CLOUD66_AUTH_TOKEN}")
-      .get() (err, res, body)->
-        payload = JSON.parse(body)
-        stack = _.findWhere(payload["response"], name: name, environment: env)
-        robot
-          .http("https://app.cloud66.com/api/3/stacks/#{stack.uid}/deployments.json")
-          .header('Authorization', "Bearer #{process.env.HUBOT_CLOUD66_AUTH_TOKEN}")
-          .post({}) (err, res, body)->
-            payload = JSON.parse(body)
-            msg.reply payload["response"]["message"]
-
   robot.on 'semaphore-deploy', (deploy)->
     console.log deploy
 
