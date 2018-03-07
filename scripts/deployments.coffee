@@ -50,14 +50,14 @@ module.exports = (robot)->
                 server.name.match(env_regex)
               _.each servers, (server)->
                 semaphore.builds(project.hash_id).deploy branch.id, build.build_number, server.id, (response)->
-              robot.brain.set "queue-semaphore-deployment-deploy-#{project.hash_id}-#{build.commit.id}", {
+              robot.brain.set "queue-semaphore-deployment-deploy-#{project.hash_id}-#{branch.name}", {
                 user: user,
                 room: room,
                 thread_id: thread_id
               }
               msg.reply "Deploying #{branch_name} on #{_.pluck(servers, 'name').join()}"
           else
-            robot.brain.set "queue-semaphore-deployment-build-#{project.hash_id}-#{build.commit.id}", {
+            robot.brain.set "queue-semaphore-deployment-build-#{project.hash_id}-#{branch.name}", {
               branch_id: branch.id,
               branch_name: branch_name,
               env_regex: env_regex,
@@ -92,7 +92,7 @@ module.exports = (robot)->
   #   }
   # }
   robot.on 'semaphore-deploy', (deploy)->
-    queued = robot.brain.get("queue-semaphore-deployment-deploy-#{deploy.project_hash_id}-#{deploy.commit.id}")
+    queued = robot.brain.get("queue-semaphore-deployment-deploy-#{deploy.project_hash_id}-#{deploy.branch_name}")
     if queued
       user = queued.user
       envelope = {
@@ -117,7 +117,7 @@ module.exports = (robot)->
 
   robot.on 'semaphore-build', (build)->
     if build.result is "passed"
-      queued = robot.brain.get("queue-semaphore-deployment-build-#{build.project_hash_id}-#{build.commit.id}")
+      queued = robot.brain.get("queue-semaphore-deployment-build-#{build.project_hash_id}-#{build.branch_name}")
       user = queued.user
       envelope = {
         user: user
@@ -132,8 +132,8 @@ module.exports = (robot)->
             server.name.match(queued.env_regex)
           _.each servers, (server)->
             semaphore.builds(build.project_hash_id).deploy queued.branch_id, build.build_number, server.id, (response)->
-          robot.brain.set("queue-semaphore-deployment-build-#{build.project_hash_id}-#{build.commit.id}", null)
-          robot.brain.set "queue-semaphore-deployment-deploy-#{build.project_hash_id}-#{build.commit.id}", {
+          robot.brain.set("queue-semaphore-deployment-build-#{build.project_hash_id}-#{build.branch_name}", null)
+          robot.brain.set "queue-semaphore-deployment-deploy-#{build.project_hash_id}-#{build.branch_name}", {
             user: user,
             room: room,
             thread_id: thread_id
