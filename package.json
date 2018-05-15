@@ -21,6 +21,7 @@
     "hubot-scripts": "^2.5.16",
     "hubot-shipit": "^0.1.2",
     "hubot-youtube": "^0.1.2",
+    "node-fetch": "^2.1.2",
     "semaphore-api": "^1.0.0",
     "underscore": "^1.8.3"
   },
