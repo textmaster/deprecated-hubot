@@ -1,5 +1,5 @@
 # Description:
-#   Subscribes current user to various event notifications.
+#   Notify flow and users on deployments
 #
 # Author:
 #   gottfrois
@@ -34,6 +34,7 @@ module.exports = (robot)->
     build_number = payload.build_number
 
     semaphore.builds(hash_id).info branch_name, build_number, (response)->
+      console.log response
       msg = "Semaphore #{payload.result} to deployed the following commits on #{payload.server_name}:\n"
       _.map response.commits, (commit)->
         msg += "* [#{commit.id.substring(0, 10)}](#{commit.url}) \"#{commit.message}\" by #{commit.author_name}\n"
