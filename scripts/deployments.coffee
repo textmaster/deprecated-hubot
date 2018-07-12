@@ -14,143 +14,82 @@
 #   gottfrois
 
 module.exports = (robot)->
-  _ = require('underscore')
-  semaphore = require('semaphore-api')(robot)
+  _             = require('underscore')
+  semaphore     = require('semaphore-api')(robot)
+  Subscriptions = require('../lib/subscriptions')(robot)
+  Queues        = require('../lib/queues')(robot)
 
-  # Not used yet
-  # deploy_through_cloud66 = (msg, name, env)=>
-  #   robot
-  #     .http("https://app.cloud66.com/api/3/stacks.json")
-  #     .header('Authorization', "Bearer #{process.env.HUBOT_CLOUD66_AUTH_TOKEN}")
-  #     .get() (err, res, body)->
-  #       payload = JSON.parse(body)
-  #       stack = _.findWhere(payload["response"], name: name, environment: env)
-  #       robot
-  #         .http("https://app.cloud66.com/api/3/stacks/#{stack.uid}/deployments.json")
-  #         .header('Authorization', "Bearer #{process.env.HUBOT_CLOUD66_AUTH_TOKEN}")
-  #         .post({}) (err, res, body)->
-  #           payload = JSON.parse(body)
-  #           msg.reply payload["response"]["message"]
+  deploy = (project_hash_id, branch_name, build_number, server_name, envelope)->
+    semaphore.servers project_hash_id, (servers)->
+      server = _.findWhere(servers, { name: server_name })
 
-  deploy_through_semaphore = (msg, name, env)=>
-    branch_name  = 'master'
-    env_regex    = new RegExp(".*#{env}.*", "i")
-    user = msg.envelope.user
-    room = msg.envelope.room
-    thread_id = msg.message.metadata.thread_id
+      if server
+        semaphore.builds(project_hash_id).deploy branch_name, build_number, server.id, (response)->
+          Subscriptions.subscribe("semaphore.deploy.#{response.number}", envelope.user.name, envelope)
 
-    semaphore.projects (projects)->
-      project = _.findWhere(projects, name: name)
-      semaphore.branches project.hash_id, (branches)->
-        branch = _.findWhere(branches, name: branch_name)
-        semaphore.branches(project.hash_id).status branch.id, (build)->
-          if build.result is "passed"
-            semaphore.servers project.hash_id, (servers)->
-              servers = _.select servers, (server)->
-                server.name.match(env_regex)
-              _.each servers, (server)->
-                semaphore.builds(project.hash_id).deploy branch.id, build.build_number, server.id, (response)->
-              robot.brain.set "queue-semaphore-deployment-deploy-#{project.hash_id}-#{branch.name}", {
-                user: user,
-                room: room,
-                thread_id: thread_id
-              }
-              msg.reply "Deploying #{branch_name} on #{_.pluck(servers, 'name').join()}"
-          else
-            robot.brain.set "queue-semaphore-deployment-build-#{project.hash_id}-#{branch.name}", {
-              branch_id: branch.id,
-              branch_name: branch_name,
-              env_regex: env_regex,
-              user: user,
-              room: room,
-              thread_id: thread_id
-            }
-            msg.reply "Couldn't deploy #{branch_name} yet, will do as soon as spec passes."
+          robot.send envelope, "@#{envelope.user.name} Deploying #{branch_name} on #{server.name}"
+      else
+        message = "Cannot find server #{server_name}. Available servers are:\n"
+        _.chain(servers)
+         .sortBy (server)->
+           server.name
+         .each (server)->
+           message += "* #{server.name}\n"
 
-  # { project_name: 'TextMaster.com',
-  #   project_hash_id: '6550c0d1-a0f7-412e-951a-6524840a451b',
-  #   server_name: '[sandbox] textmaster (Cloud66)',
-  #   number: 992,
-  #   event: 'deploy',
-  #   result: 'passed',
-  #   finished_at: '2018-03-06T09:59:20Z',
-  #   created_at: '2018-03-06T09:40:40Z',
-  #   updated_at: '2018-03-06T09:59:20Z',
-  #   started_at: '2018-03-06T09:40:46Z',
-  #   html_url: 'https://semaphoreci.com/textmaster/textmaster-com/servers/sandbox-textmaster-cloud66/deploys/992',
-  #   branch_name: 'master',
-  #   build_number: 6361,
-  #   build_html_url: 'https://semaphoreci.com/textmaster/textmaster-com/branches/master/builds/6361',
-  #   branch_html_url: 'https://semaphoreci.com/textmaster/textmaster-com/branches/master',
-  #   commit: {
-  #     id: '7465f5795a229678f00f2083b170ba758c881b07',
-  #     url: 'https://github.com/textmaster/TextMaster.com/commit/7465f5795a229678f00f2083b170ba758c881b07',
-  #     author_name: 'Maciek',
-  #     author_email: 'maciejrzasa@gmail.com',
-  #     message: 'Merge pull request #5466 from textmaster/mrzasa/graphical-file-changes\n\nChange Graphic files option behavior',
-  #     timestamp: '2018-03-06T09:26:49Z'
-  #   }
-  # }
-  robot.on 'semaphore-deploy', (deploy)->
-    queued = robot.brain.get("queue-semaphore-deployment-deploy-#{deploy.project_hash_id}-#{deploy.branch_name}")
-    if queued
-      if deploy.result is "passed"
-        robot.brain.set("queue-semaphore-deployment-deploy-#{deploy.project_hash_id}-#{deploy.commit.id}", null)
-      # else
-      #   robot.send envelope, "@#{user.name}: Deployment [#{deploy.number}](#{deploy.html_url}) failed with status #{deploy.result}"
+        robot.send envelope, message
+
+
+  deploy_through_semaphore = (msg, project, server_name, branch_name)->
+    branch = _.findWhere(project.branches, branch_name: branch_name)
+
+    if branch
+      if branch.result is 'passed'
+        deploy(project.hash_id, branch.branch_name, branch.build_number, server_name, msg.envelope)
+
+      if branch.result is 'pending'
+        Queues.push(project.hash_id, branch.branch_name, { server_name: server_name, envelope: msg.envelope })
+        msg.send "Scheduling deployment of branch [#{branch.branch_name}](#{branch.build_url}) as soon as build has passed."
+
+      if branch.result is 'failed'
+        msg.send "Cannot deploy branch [#{branch.branch_name}](#{branch.build_url}) because build has failed."
+    else
+      message = "Cannot find branch #{branch_name} in #{project.name}'s branches. Available branches are:\n"
+      _.chain(project.branches)
+       .sortBy (branch)->
+         branch.branch_name
+       .each (branch)->
+         message += "* [#{branch.result}] #{branch.branch_name}\n"
+      msg.send message
+
 
   robot.on 'semaphore-build', (build)->
-    if build.result is "passed"
-      queued = robot.brain.get("queue-semaphore-deployment-build-#{build.project_hash_id}-#{build.branch_name}")
-      user = queued.user
-      envelope = {
-        user: user
-        metadata: {
-          room: queued.room,
-          thread_id: queued.thread_id,
-        }
-      }
-      if queued
-        semaphore.servers build.project_hash_id, (servers)->
-          servers = _.select servers, (server)->
-            server.name.match(queued.env_regex)
-          _.each servers, (server)->
-            semaphore.builds(build.project_hash_id).deploy queued.branch_id, build.build_number, server.id, (response)->
-          robot.brain.set("queue-semaphore-deployment-build-#{build.project_hash_id}-#{build.branch_name}", null)
-          robot.brain.set "queue-semaphore-deployment-deploy-#{build.project_hash_id}-#{build.branch_name}", {
-            user: user,
-            room: room,
-            thread_id: thread_id
-          }
-          robot.send envelope, "@#{user.name}: #{queued.branch_name} build passed, now deploying on #{_.pluck(servers, 'name').join()}"
+    queued = Queues.pop(build.project_hash_id, build.branch_name)
 
-  robot.respond /deploy (.*) (?:on|to) (.*)/, (msg)=>
-    alias  = msg.match[1]
-    env    = msg.match[2]
-    mapper = [
-      { alias: "textmaster", name: process.env.HUBOT_SEMAPHORE_DEFAULT_PROJECT, env: "production", func: deploy_through_semaphore },
-      { alias: "textmaster", name: process.env.HUBOT_SEMAPHORE_DEFAULT_PROJECT, env: "staging", func: deploy_through_semaphore },
-      { alias: "textmaster", name: process.env.HUBOT_SEMAPHORE_DEFAULT_PROJECT, env: "sandbox", func: deploy_through_semaphore },
-      { alias: "hookshot", name: "hookshot_service", env: "production", func: deploy_through_semaphore },
-      { alias: "hookshot", name: "hookshot_service", env: "staging", func: deploy_through_semaphore },
-      { alias: "glossary", name: "glossary_service", env: "staging", func: deploy_through_semaphore },
-      { alias: "glossary", name: "glossary_service", env: "production", func: deploy_through_semaphore },
-      { alias: "payment-gateway", name: "payment_gateway_service", env: "staging", func: deploy_through_semaphore },
-      { alias: "payment-gateway", name: "payment_gateway_service", env: "production", func: deploy_through_semaphore },
-      { alias: "machine-translation", name: "machine_translation_service", env: "staging", func: deploy_through_semaphore },
-      { alias: "machine-translation", name: "machine_translation_service", env: "production", func: deploy_through_semaphore },
-      { alias: "translation-memory", name: "translation_memory_service", env: "staging", func: deploy_through_semaphore },
-      { alias: "translation-memory", name: "translation_memory_service", env: "production", func: deploy_through_semaphore },
-      { alias: "backend", name: "tm_backend-docker", env: "production", func: deploy_through_semaphore },
-      { alias: "backend", name: "tm_backend-docker", env: "staging", func: deploy_through_semaphore },
-      { alias: "option-presets", name: "option_presets_service", env: "production", func: deploy_through_semaphore },
-      { alias: "author-bff", name: "author_bff", env: "staging", func: deploy_through_semaphore },
-      { alias: "author-bff", name: "author_bff", env: "production", func: deploy_through_semaphore },
-      { alias: "client-app", name: "client_frontend", env: "production", func: deploy_through_semaphore },
-    ]
-    stack = _.findWhere(mapper, { alias: alias, env: env })
+    if queued
+      deploy(build.project_hash_id, build.branch_name, build.build_number, queued.server_name, queued.envelope)
 
-    if stack and _.isFunction(stack.func)
-      stack.func(msg, stack.name, stack.env)
-    else
-      msg.reply "Eh?"
+  robot.respond /deploy (.*) (?:on|to) (.*)/, (msg)->
+    service_name = msg.match[1].trim()
+    server_name  = msg.match[2].trim()
+    branch_name  = 'master'
+
+    msg.send "Looking for #{service_name} #{branch_name}'s build status..."
+
+    semaphore.projects (projects)->
+      project = _.findWhere(projects, name: service_name)
+      if project
+        deploy_through_semaphore(msg, project, server_name, branch_name)
+      else
+        message = "Cannot find matching service with #{service_name}. Available services are:\n"
+
+        _.chain(projects)
+         .sortBy (project)->
+           project.name
+         .each (project)->
+          master_branch = _.findWhere(project.branches, branch_name: 'master')
+          if master_branch
+            message += "* [#{master_branch.result}] #{project.name}\n"
+          else
+            message += "* [#{project.branches[0].result}] #{project.name}\n"
+
+        msg.send(message)
