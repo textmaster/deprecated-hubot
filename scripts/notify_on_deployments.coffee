@@ -37,7 +37,8 @@ module.exports = (robot)->
       console.log response
       msg = "Semaphore #{payload.result} to deployed the following commits on #{payload.server_name}:\n"
       _.map response.commits, (commit)->
-        msg += "* [#{commit.id.substring(0, 10)}](#{commit.url}) \"#{commit.message}\" by #{commit.author_name}\n"
+        unless commit.message.includes("Merge pull request")
+          msg += "* [#{commit.id.substring(0, 10)}](#{commit.url}) \"#{commit.message}\" by #{commit.author_name}\n"
 
       notify(event, msg)
 
