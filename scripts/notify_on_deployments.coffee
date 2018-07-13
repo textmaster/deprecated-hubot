@@ -33,14 +33,13 @@ module.exports = (robot)->
       msg = "Semaphore #{payload.result} to deployed the following commits on #{payload.server_name}:\n"
       _.map response.commits, (commit)->
         unless commit.message.includes("Merge pull request")
-          msg += "* [#{commit.id.substring(0, 10)}](#{commit.url}) \"#{commit.message}\" by #{commit.author_name}\n"
+          msg += "* [#{commit.id.substring(0, 8)}](#{commit.url}) \"#{commit.message}\" by #{commit.author_name}\n"
 
       notify(events, msg)
+      Subscriptions.unsubscribeAllKeysFromEvent("semaphore.#{payload.event}.#{payload.number}")
 
   robot.on 'semaphore-deploy', (payload)->
     notifyCommitsFromPayload([
       "semaphore.#{payload.event}.#{payload.result}",
       "semaphore.#{payload.event}.#{payload.number}"
     ], payload)
-
-    Subscriptions.unsubscribeAllKeysFromEvent("semaphore.#{payload.event}.#{payload.number}")
