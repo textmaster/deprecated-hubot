@@ -39,6 +39,9 @@ module.exports = (robot)->
       Subscriptions.unsubscribeAllKeysFromEvent("semaphore.#{payload.event}.#{payload.number}")
 
   robot.on 'semaphore-deploy', (payload)->
+    # we only care about production deployments
+    return unless payload.server_name is 'production'
+
     notifyCommitsFromPayload([
       "semaphore.#{payload.event}.#{payload.result}",
       "semaphore.#{payload.event}.#{payload.number}"
