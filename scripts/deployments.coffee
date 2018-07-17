@@ -83,9 +83,12 @@ module.exports = (robot)->
 
   robot.respond /stop deploy|deployment/, (msg)->
     deployment = robot.brain.data.deployment || {}
+
     if deployment.server_name
       semaphore.stop deployment.project_hash_id, deployment.server_name, deployment.number, (response)->
         msg.send "Stopped #{response.project_name} deployment on #{response.server_name}."
+    else
+      msg.send "No deployment to stop."
 
   robot.respond /deploy (.*) (?:on|to) (.*)/, (msg)->
     service_name = msg.match[1].trim()
