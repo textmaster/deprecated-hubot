@@ -19,12 +19,22 @@ module.exports = (robot)->
   Subscriptions = require('../lib/subscriptions')(robot)
   Queues        = require('../lib/queues')(robot)
 
+  track = (deployment)->
+    robot.brain.data.deployment = deployment
+    robot.brain.save()
+
   deploy = (project_hash_id, branch_name, build_number, server_name, envelope)->
     semaphore.servers project_hash_id, (servers)->
       server = _.findWhere(servers, { name: server_name })
 
       if server
         semaphore.builds(project_hash_id).deploy branch_name, build_number, server.id, (response)->
+          track(
+            project_hash_id: project_hash_id,
+            server_name:     server_name,
+            number:          response.number,
+          )
+
           Subscriptions.subscribe("semaphore.deploy.#{response.number}", envelope.user.name, envelope)
 
           robot.send envelope, "@#{envelope.user.name} Deploying #{branch_name} on #{server.name}"
@@ -70,6 +80,12 @@ module.exports = (robot)->
 
     if queued
       deploy(build.project_hash_id, build.branch_name, build.build_number, queued.server_name, queued.envelope)
+
+  robot.respond /stop deploy|deployment/, (msg)->
+    deployment = robot.brain.data.deployment || {}
+    if deployment.server_name
+      semaphore.stop deployment.project_hash_id, deployment.server_name, deployment.number, (response)->
+        msg.send "Stopped #{response.project_name} deployment on #{response.server_name}."
 
   robot.respond /deploy (.*) (?:on|to) (.*)/, (msg)->
     service_name = msg.match[1].trim()
