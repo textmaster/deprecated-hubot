@@ -29,5 +29,14 @@ class Queues
 
     return value
 
+  popAll: (event)->
+    qs = @queues()
+    qs[event] ||= {}
+
+    delete qs[event]
+    @persist(qs)
+
+    return qs[event]
+
 module.exports = (robot)->
   new Queues(robot)

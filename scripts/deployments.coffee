@@ -61,7 +61,11 @@ module.exports = (robot)->
          message += "* [#{branch.result}] #{branch.branch_name}\n"
       msg.send message
 
+  # Stores history of semaphore builds.
+  robot.on 'semaphore-build', (build)->
+    Queues.push("commits.#{build.project_hash_id}", build.number, build.commit)
 
+  # Triggers queued deployment on semaphore build completed.
   robot.on 'semaphore-build', (build)->
     queued = Queues.pop(build.project_hash_id, build.branch_name)
 
