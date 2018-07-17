@@ -52,6 +52,8 @@ module.exports = (robot)->
 
       if branch.result is 'failed'
         msg.send "Cannot deploy branch [#{branch.branch_name}](#{branch.build_url}) because build has failed."
+          semaphore.rebuild branch.branch_name, branch.build_number, (build)->
+            msg.send "Rebuilding [#{build.branch_name}](#{build.html_url})."
     else
       message = "Cannot find branch #{branch_name} in #{project.name}'s branches. Available branches are:\n"
       _.chain(project.branches)
