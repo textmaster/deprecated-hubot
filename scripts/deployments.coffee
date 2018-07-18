@@ -1,14 +1,8 @@
 # Description:
-#   Handles TextMaster deployments
+#   Allows services deployments through SemaphoreCI
 #
 # Commands:
-#   hubot deploy textmaster on production - Deploy TextMaster.com app master branch on all production servers
-#   hubot deploy textmaster on staging - Deploy TextMaster.com app master branch on all staging servers
-#   hubot deploy hookshot on production - Deploy Hookshot service on production server
-#   hubot deploy hookshot on staging - Deploy Hookshot service on staging server
-#   hubot deploy backend on production - Deploy Backend service on production server
-#   hubot deploy backend on staging - Deploy Backend service on staging server
-#   hubot deploy wms on production - Deploy WebscrapMaster service on production server
+#   hubot deploy <semaphore_project_name> on <server_name> - Deploy <semaphore_project_name> master branch on <server_name> server.
 #
 # Author:
 #   gottfrois
