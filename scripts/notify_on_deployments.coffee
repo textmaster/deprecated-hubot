@@ -28,15 +28,13 @@ module.exports = (robot)->
     branch_name  = payload.branch_name
     hash_id      = payload.project_hash_id
     build_number = payload.build_number
+    commit       = payload.commit
 
-    semaphore.builds(hash_id).info branch_name, build_number, (response)->
-      msg = "Semaphore #{payload.result} to deployed the following commits on #{payload.server_name}:\n"
-      _.map response.commits, (commit)->
-        unless commit.message.includes("Merge pull request")
-          msg += "* [#{commit.id.substring(0, 8)}](#{commit.url}) \"#{commit.message}\" by #{commit.author_name}\n"
+    message = "Semaphore #{payload.result} to deployed the following commits on #{payload.server_name}:\n"
+    message += "* [#{commit.id.substring(0, 8)}](#{commit.url}) \"#{commit.message}\" by #{commit.author_name}\n"
 
-      notify(events, msg)
-      Subscriptions.unsubscribeAllKeysFromEvent("semaphore.#{payload.event}.#{payload.number}")
+    notify(events, message)
+    Subscriptions.unsubscribeAllKeysFromEvent("semaphore.#{payload.event}.#{payload.number}")
 
   robot.on 'semaphore-deploy', (payload)->
     # we only care about production deployments
