@@ -23,8 +23,12 @@ module.exports = function (robot) {
   const aggregateDeployedCommitsBetweenBuilds = async (deployment, previousBuild, latestBuild) => {
     const previousBuildNumber = previousBuild.number;
     const lastestBuildNumber  = latestBuild.number;
-    const pages               = [1, 2, 3, 4, 5];
 
+    if (previousBuildNumber == lastestBuildNumber) {
+      return [deployment.commit];
+    }
+
+    const pages  = [1, 2, 3, 4, 5];
     const builds = await Promise.all(pages.map(async (page) => {
       return fetchBuildHistory(deployment, page);
     }))
@@ -41,7 +45,7 @@ module.exports = function (robot) {
   }
 
   const formatName = (name) => {
-    return "@" + name;
+    return `@${name}`;
   }
 
   const lookupNamesFromSubscriptions = (event) => {
@@ -59,14 +63,14 @@ module.exports = function (robot) {
   }
 
   const buildCommitMessage = (commit) => {
-    return "* [" + commit.id.substring(0, 8) + "](" + commit.url + ") \"" + commit.message + "\" by " + commit.author_name;
+    return `* [${commit.id.substring(0, 8)}](${commit.url}) ${commit.message} by ${commit.author_name}`;
   }
 
   const buildMessage = (deployment, commits, events) => {
     const messages = [];
 
     // Title
-    messages.push("Semaphore " + deployment.result + " to deployed the following commits on " + deployment.server_name + ":");
+    message.push(`Semaphore ${deployment.result} to deployed on ${deployment.server_name}`)
     // Commits
     messages.push(_.map(commits, buildCommitMessage))
     // Users to notify
@@ -89,11 +93,11 @@ module.exports = function (robot) {
       const commits = await aggregateDeployedCommitsBetweenBuilds(deployment, previousBuild, latestBuild);
 
       notify(deployment, commits, [
-        "semaphore." + deployment.event + "." + deployment.result,
-        "semaphore." + deployment.event + "." + deployment.number
+        `semaphore.${deployment.event}.${deployment.result}`,
+        `semaphore.${deployment.event}.${deployment.number}`
       ]);
 
-      Subscriptions.unsubscribeAllKeysFromEvent("semaphore." + deployment.event + "." + deployment.number)
+      Subscriptions.unsubscribeAllKeysFromEvent(`semaphore.${deployment.event}.${deployment.number}`);
     }
   });
 }
