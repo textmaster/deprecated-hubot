@@ -70,7 +70,7 @@ module.exports = function (robot) {
     const messages = [];
 
     // Title
-    message.push(`Semaphore ${deployment.result} to deployed on ${deployment.server_name}`)
+    messages.push(`Semaphore ${deployment.result} to deployed on ${deployment.server_name}`)
     // Commits
     messages.push(_.map(commits, buildCommitMessage))
     // Users to notify
