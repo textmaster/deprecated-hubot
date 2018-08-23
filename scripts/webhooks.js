@@ -4,10 +4,11 @@
 // Author:
 //   gottfrois
 
-module.exports = function (robot) {
+module.exports = function(robot) {
   const webhook = ({path, event}) => {
     const handler = (req, res) => {
-      let data = (req.body.payload != null) ? JSON.parse(req.body.payload) : req.body;
+      let data =
+        req.body.payload != null ? JSON.parse(req.body.payload) : req.body;
       robot.emit(event, data);
       res.send('OK');
     };

@@ -5,7 +5,8 @@
   "author": "Pierre-Louis Gottfrois <pierrelouis.gottfrois@gmail.com>",
   "description": "A simple helpful robot for your Company",
   "scripts": {
-    "start": "hubot --name 'hubot'"
+    "start": "hubot --name 'hubot'",
+    "prettier": "prettier --trailing-comma all --no-bracket-spacing --jsx-bracket-same-line --single-quote --write '{scripts,lib}/**/*.js'"
   },
   "dependencies": {
     "@octokit/rest": "^15.9.4",
@@ -33,5 +34,7 @@
   "engines": {
     "node": "10.x"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "prettier": "^1.14.2"
+  }
 }
