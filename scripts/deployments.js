@@ -8,14 +8,16 @@
 //   gottfrois
 
 module.exports = function (robot) {
-  let _             = require('underscore');
-  let semaphore     = require('semaphore-api')(robot);
-  let Subscriptions = require('../lib/subscriptions')(robot);
-  let Queues        = require('../lib/queues')(robot);
+  const _             = require('underscore');
+  const semaphore     = require('semaphore-api')(robot);
+  const Subscriptions = require('../lib/subscriptions')(robot);
+  const Queues        = require('../lib/queues')(robot);
+  const promisify     = require('../lib/utils/promisify');
+  const {fetchBuildUsingBuildUrl} = require('../lib/semaphore')
 
-  let deploy = (project_hash_id, branch_name, build_number, server_name, envelope)=>
+  const deploy = (project_hash_id, branch_name, build_number, server_name, envelope)=>
     semaphore.servers(project_hash_id, function(servers){
-      let server = _.findWhere(servers, { name: server_name });
+      const server = _.findWhere(servers, { name: server_name });
 
       if (server) {
         return semaphore.builds(project_hash_id).deploy(branch_name, build_number, server.id, function(response){
@@ -31,11 +33,10 @@ module.exports = function (robot) {
 
         return robot.send(envelope, message);
       }
-    })
-  ;
+    });
 
-  let deploy_through_semaphore = function(msg, project, server_name, branch_name){
-    let branch = _.findWhere(project.branches, {branch_name});
+  const deploy_through_semaphore = function(msg, project, server_name, branch_name){
+    const branch = _.findWhere(project.branches, {branch_name});
 
     if (branch) {
       if (branch.result === 'passed') {
@@ -69,33 +70,50 @@ module.exports = function (robot) {
     }
   });
 
-  return robot.respond(/deploy (.*) (?:on|to) (.*)/, function(msg){
-    let service_name = msg.match[1].trim();
-    let server_name  = msg.match[2].trim();
-    let branch_name  = 'master';
+  robot.respond(/deploy (\S* )(\S* )?(?:on|to) (.*)/, async function(msg){
+    const service_name = msg.match[1].trim();
+    let branch_name  = msg.match[2] ? msg.match[2].trim() : null;
+    const server_name  = msg.match[3].trim();
 
-    msg.send(`Looking for ${service_name} ${branch_name}'s build status...`);
+    msg.send(`Looking for ${service_name} ${server_name}'s build status...`);
 
-    return semaphore.projects(function(projects){
-      let project = _.findWhere(projects, {name: service_name});
-      if (project) {
-        return deploy_through_semaphore(msg, project, server_name, branch_name);
-      } else {
-        let message = `Cannot find matching service with ${service_name}. Available services are:\n`;
+    const projects = await promisify(semaphore.projects.bind(semaphore))();
+    const project = _.findWhere(projects, {name: service_name});
 
-        _.chain(projects)
-         .sortBy(project=> project.name)
-         .each(function(project){
-          let master_branch = _.findWhere(project.branches, {branch_name: 'master'});
-          if (master_branch) {
-            return message += `* [${master_branch.result}] ${project.name}\n`;
-          } else {
-            return message += `* [${project.branches[0].result}] ${project.name}\n`;
-          }
-        });
-
-        return msg.send(message);
+    if (project) {
+      const servers = await promisify(semaphore.servers.bind(semaphore))(project.hash_id);
+      const server = _.findWhere(servers, { name: server_name });
+      if(!server) {
+        msg.send(`Server not found ${server_name}`);
+        return;
       }
-    });
+
+      if(!branch_name) {
+        const status = await promisify(semaphore.servers(project.hash_id).status.bind(semaphore))(server.id);
+        const build_url = status.build_url;
+        if (!build_url) {
+          msg.send(`Cannot find build for ${service_name} ${server_name}. \n\n Provide a branch name to deploy e.g \`hubot deploy ${service_name} my_branch on ${server_name}\``);
+        }
+        const build = await fetchBuildUsingBuildUrl(build_url);
+        branch_name = build.branch_name;
+      }
+
+      deploy_through_semaphore(msg, project, server_name, branch_name);
+    } else {
+      let message = `Cannot find matching service with ${service_name}. Available services are:\n`;
+
+      _.chain(projects)
+      .sortBy(project=> project.name)
+      .each(function(project){
+        let master_branch = _.findWhere(project.branches, {branch_name: 'master'});
+        if (master_branch) {
+          return message += `* [${master_branch.result}] ${project.name}\n`;
+        } else {
+          return message += `* [${project.branches[0].result}] ${project.name}\n`;
+        }
+      });
+
+      return msg.send(message);
+    }
   });
 };
